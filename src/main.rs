@@ -6,7 +6,7 @@ use csv::Writer;
 use reqwest::{Url};
 use serde::{Serialize, Deserialize};
 
-use std::thread;
+use std::{thread};
 use std::time::Duration;
 use indicatif::ProgressBar;
 
@@ -30,7 +30,8 @@ static APP_USER_AGENT: &str = concat!(
 );
 
 fn main() {
-    println!("Checking...");
+    let count = thread::available_parallelism().unwrap().get();
+    println!("Available parallelism: {:?}", count);
 
     let mut args: Vec<String> = env::args().collect();
 
