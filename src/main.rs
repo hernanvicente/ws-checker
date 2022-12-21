@@ -3,7 +3,7 @@ use std::error::Error;
 
 use color_print::cprintln;
 use csv::Writer;
-use reqwest::Url;
+use reqwest::{Url};
 use serde::{Serialize, Deserialize};
 
 use std::thread;
@@ -23,6 +23,11 @@ struct Row {
     protocol: String,
     www: bool,
 }
+
+// Set the user agent as Chrome
+static APP_USER_AGENT: &str = concat!(
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+);
 
 fn main() {
     println!("Checking...");
@@ -138,6 +143,7 @@ fn fetch_homepage(url: &str) -> Result<Response, Box<dyn Error>> {
     let resp = client().get(url).send()?;
     let headers = resp.headers();
 
+    cprintln!("<blue>{:?} - {:?}</blue>", url, resp.status());
     cprintln!("<red>{:?} - {:?}</red>", url, headers);
 
     Ok(Response { code: resp.status().as_u16() as i32, url: url.to_string() })
@@ -145,6 +151,7 @@ fn fetch_homepage(url: &str) -> Result<Response, Box<dyn Error>> {
 
 fn client() -> reqwest::blocking::Client {
     reqwest::blocking::Client::builder()
+        .user_agent(APP_USER_AGENT)
         .timeout(std::time::Duration::from_secs(5))
         .build()
         .unwrap()
