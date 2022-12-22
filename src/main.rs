@@ -2,11 +2,12 @@ use std::env;
 use std::error::Error;
 
 use color_print::cprintln;
-use csv::Writer;
+use csv::{WriterBuilder};
 use reqwest::{Url};
 use serde::{Serialize, Deserialize};
 
 use std::{thread};
+use std::fs::OpenOptions;
 use std::time::Duration;
 use indicatif::ProgressBar;
 
@@ -46,9 +47,12 @@ fn main() {
             let domains = read_domains_from_file();
 
             println!("No argument domain provided, checking {} domains from file", domains.len());
-            let all_responses = check_all_domains(domains);
 
-            write_domains_to_file(all_responses);
+            for group in domains.chunks(50) {
+                let responses = check_all_domains(group.to_vec());
+
+                write_domains_to_file(responses);
+            }
         },
     };
 }
@@ -76,7 +80,14 @@ fn check_domain(domain: &str, try_number: Option<usize>) -> Response {
 
 fn write_domains_to_file(responses: Vec<Response>) -> Result<(), Box<dyn Error>> {
     cprintln!("<cyan>Writing to file...</cyan>");
-    let mut wtr = Writer::from_path("./report.csv")?;
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open("report.csv")
+        .unwrap();
+
+    let mut wtr = WriterBuilder::new().has_headers(false).from_writer(file);
 
     for response in responses {
         let url = Url::parse(&response.url);
@@ -142,10 +153,10 @@ fn build_urls(domain: &str) -> Vec<String> {
 
 fn fetch_homepage(url: &str) -> Result<Response, Box<dyn Error>> {
     let resp = client().get(url).send()?;
-    let headers = resp.headers();
-
-    cprintln!("<blue>{:?} - {:?}</blue>", url, resp.status());
-    cprintln!("<red>{:?} - {:?}</red>", url, headers);
+    // let headers = resp.headers();
+    // let status = resp.status();
+    // cprintln!("<blue>{:?} - {:?}</blue>", url, status);
+    // cprintln!("<red>{:?} - {:?}</red>", url, headers);
 
     Ok(Response { code: resp.status().as_u16() as i32, url: url.to_string() })
 }
